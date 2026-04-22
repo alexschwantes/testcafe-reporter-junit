@@ -6,6 +6,7 @@ module.exports = () => ({
     currentFixtureName: null,
     testCount:          0,
     skipped:            0,
+    currentFixtureOwner:null,
 
     reportTaskStart (startTime, userAgents, testCount) {
         this.startTime = startTime;
@@ -13,8 +14,9 @@ module.exports = () => ({
         this.testCount = testCount;
     },
 
-    reportFixtureStart (name) {
+    reportFixtureStart (name, path, meta) {
         this.currentFixtureName = this.escapeHtml(name);
+        this.currentFixtureOwner = meta && meta.owner ? this.escapeHtml(meta.owner) : null;
     },
 
     _renderErrors (testRunInfo) {
@@ -47,11 +49,16 @@ module.exports = () => ({
         this.report += this.indentString('</system-out>\n', 4);
     },
 
-    reportTestDone (name, testRunInfo) {
+    reportTestDone (name, testRunInfo, meta) {
         var hasErr = !!testRunInfo.errs.length;
+        var owner  = meta && meta.owner ? this.escapeHtml(meta.owner) : this.currentFixtureOwner;
         
         var openTag = `<testcase classname="${this.currentFixtureName}" ` +
-                        `name="${this.escapeHtml(name)}" time="${testRunInfo.durationMs / 1000}">\n`;
+                        `name="${this.escapeHtml(name)}" time="${testRunInfo.durationMs / 1000}"`;
+        if (owner)
+            openTag += ` owner="${owner}"`;
+          
+        openTag += '>\n';
 
         this.report += this.indentString(openTag, 2);
 
