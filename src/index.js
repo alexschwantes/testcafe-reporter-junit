@@ -6,7 +6,7 @@ module.exports = () => ({
     currentFixtureName: null,
     testCount:          0,
     skipped:            0,
-    currentFixtureOwner:null,
+    currentFixtureMeta: null,
 
     reportTaskStart (startTime, userAgents, testCount) {
         this.startTime = startTime;
@@ -16,7 +16,23 @@ module.exports = () => ({
 
     reportFixtureStart (name, path, meta) {
         this.currentFixtureName = this.escapeHtml(name);
-        this.currentFixtureOwner = meta && meta.owner ? this.escapeHtml(meta.owner) : null;
+        this.currentFixtureMeta = meta ? Object.assign({}, meta) : null;
+    },
+
+    _renderMetadata (testMeta) {
+        var metadata = Object.assign({}, this.currentFixtureMeta || {}, testMeta || {});
+        var attrs    = '';
+
+        Object.keys(metadata).forEach(key => {
+            var value = metadata[key];
+
+            if (typeof value === 'undefined')
+                return;
+
+            attrs += ` ${this.escapeHtml(key)}="${this.escapeHtml(String(value))}"`;
+        });
+
+        return attrs;
     },
 
     _renderErrors (testRunInfo) {
@@ -51,12 +67,12 @@ module.exports = () => ({
 
     reportTestDone (name, testRunInfo, meta) {
         var hasErr = !!testRunInfo.errs.length;
-        var owner  = meta && meta.owner ? this.escapeHtml(meta.owner) : this.currentFixtureOwner;
+        var metadataAttributes = this._renderMetadata(meta);
         
         var openTag = `<testcase classname="${this.currentFixtureName}" ` +
                         `name="${this.escapeHtml(name)}" time="${testRunInfo.durationMs / 1000}"`;
-        if (owner)
-            openTag += ` owner="${owner}"`;
+
+        openTag += metadataAttributes;
           
         openTag += '>\n';
 
